@@ -78,7 +78,7 @@ namespace com.FlightBokingAPI.Controllers
                     int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (userid == null || userid == 0)
                     {
-                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                        return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                     }
                     CommonResponse Response = await _flightServices.SearchFlight(Search,userid);
                     return Ok(Response);
@@ -102,7 +102,7 @@ namespace com.FlightBokingAPI.Controllers
                     int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (userid == null || userid == 0)
                     {
-                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                        return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                     }
                     CommonResponse Response = await _flightServices.CalendarPrice(Search,userid);
                     return Ok(Response);
@@ -127,7 +127,7 @@ namespace com.FlightBokingAPI.Controllers
                     int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (userid == null || userid == 0)
                     {
-                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                        return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                     }
                     CommonResponse Response = await _flightServices.Fare_PriceUpsellWithoutPNR(request.sc, request.id,userid);
                     return Ok(Response);
