@@ -1,0 +1,26 @@
+﻿CREATE TABLE [dbo].[Flight_pax_detail] (
+    [bookingid]                    NVARCHAR (100) NULL,
+    [paxtype]                      INT            NULL,
+    [title]                        NVARCHAR (50)  NULL,
+    [firstname]                    NVARCHAR (300) NULL,
+    [middlename]                   NVARCHAR (300) NULL,
+    [lastname]                     NVARCHAR (300) NULL,
+    [dateofbirth]                  DATETIME       NULL,
+    [age]                          NVARCHAR (300) NULL,
+    [gender]                       INT            NULL,
+    [nationality]                  NVARCHAR (100) NULL,
+    [seat_preference]              NVARCHAR (100) NULL,
+    [meal_preference]              NVARCHAR (100) NULL,
+    [passport_number]              NVARCHAR (300) NULL,
+    [passport_country]             NVARCHAR (100) NULL,
+    [passport_expirydate]          DATETIME       NULL,
+    [api_traveller_id]             NVARCHAR (100) NULL,
+    [passport_issuedate]           DATETIME       NULL,
+    [passport_city]                NVARCHAR (300) NULL,
+    [contactee_phone_country_code] NVARCHAR (300) NULL,
+    [contactee_phone_number]       NVARCHAR (300) NULL,
+    [contactee_email]              NVARCHAR (300) NULL,
+    [id]                           INT            IDENTITY (1, 1) NOT NULL,
+    [isleadpax]                    BIT            NULL
+);
+

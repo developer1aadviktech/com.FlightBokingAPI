@@ -1,0 +1,56 @@
+﻿CREATE proc dbo.sp_InsertTempFlightBooking
+@id int,
+@departure_code nvarchar(100),
+@departure_city nvarchar(300),
+@departure_name nvarchar(900),
+@departure_datetime datetime,
+@arrival_code nvarchar(300),
+@arrival_city nvarchar(300),
+@arrival_name nvarchar(900),
+@arrival_datetime datetime,
+@system_payment_reference  nvarchar(max),
+@triptype nvarchar(300),
+@faretype nvarchar(300),
+@searchcode nvarchar(max),
+@userid  int,
+@api_currency nvarchar(300),
+@api_baseprice decimal(18,2),
+@api_totalprice decimal(18,2),
+@api_taxprice decimal(18,2),
+@baseprice decimal(18,2),
+@totalprice decimal(18,2),
+@taxprice decimal(18,2),
+@extraserviceprice decimal(18,2),
+@total_adult int,
+@total_child int,
+@total_infant int,
+@api_faresourcecode nvarchar(max),
+@system_faresourcecode nvarchar(max),
+@system_searchcode nvarchar(max),
+@system_reference nvarchar(max),
+@phone_country_code nvarchar(300),
+@phone_number nvarchar(300),
+@email nvarchar(500),
+@status int,
+@HoldAllowed bit,
+@IsRefundable bit,
+@createddate datetime,
+@paymenttype  int,
+@api_extraserviceprice decimal(18,2),
+@api_tkt_time_limit  nvarchar(500),
+@api_SecurityToken  nvarchar(max),
+@api_SessionId  nvarchar(max),
+@is_lcc_airline bit,
+@paymentstatus int,
+@searchchanel  int,
+@ipaddress  nvarchar(300),
+@pcc nvarchar(300),
+@supplier int
+
+as begin 
+
+INSERT INTO Temp_flight_booking (departure_code,departure_city,departure_name,departure_datetime,arrival_code,arrival_city,arrival_name,arrival_datetime,system_payment_reference,triptype,faretype,searchcode,userid,api_currency,api_baseprice,api_totalprice,api_taxprice,baseprice,totalprice,taxprice,extraserviceprice,total_adult,total_child,total_infant,api_faresourcecode,system_faresourcecode,system_searchcode,system_reference,phone_country_code,phone_number,email,status,HoldAllowed,IsRefundable,createddate,paymenttype,api_extraserviceprice,api_tkt_time_limit,api_SecurityToken,api_SessionId,is_lcc_airline,paymentstatus,searchchanel,ipaddress,pcc,supplier) 
+VALUES (@departure_code,@departure_city,@departure_name,@departure_datetime,@arrival_code,@arrival_city,@arrival_name,@arrival_datetime,@system_payment_reference,@triptype,@faretype,@searchcode,@userid,@api_currency,@api_baseprice,@api_totalprice,@api_taxprice,@baseprice,@totalprice,@taxprice,@extraserviceprice,@total_adult,@total_child,@total_infant,@api_faresourcecode,@system_faresourcecode,@system_searchcode,@system_reference,@phone_country_code,@phone_number,@email,@status,@HoldAllowed,@IsRefundable,@createddate,@paymenttype,@api_extraserviceprice,@api_tkt_time_limit,@api_SecurityToken,@api_SessionId,@is_lcc_airline,@paymentstatus,@searchchanel,@ipaddress,@pcc,@supplier);
+
+select id from Temp_flight_booking where system_reference=@system_reference 
+end
