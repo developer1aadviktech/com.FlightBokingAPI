@@ -151,7 +151,7 @@ namespace com.FlightBokingAPI.Controllers
                     int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (userid == null || userid == 0)
                     {
-                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                        return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                     }
                     CommonResponse Response = await _flightServices.FlightDetail(request,userid);
                     return Ok(Response);
@@ -175,7 +175,7 @@ namespace com.FlightBokingAPI.Controllers
                     int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                     if (userid == null || userid == 0)
                     {
-                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                        return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                     }
                     string ipaddress = HttpContext.Connection.RemoteIpAddress?.ToString();
                     CommonResponse Response = await _flightServices.FillPaxData(request, ipaddress,userid);
@@ -217,7 +217,7 @@ namespace com.FlightBokingAPI.Controllers
                 int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 if (userid == null || userid == 0)
                 {
-                    return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                    return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                 }
                 CommonResponse Response = await _flightServices.BookingList(userid);
                 return Ok(Response);
@@ -239,7 +239,7 @@ namespace com.FlightBokingAPI.Controllers
                 int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
                 if (userid == null || userid == 0)
                 {
-                    return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                    return Ok(new CommonResponse { Status = HttpStatusCode.Unauthorized, Data = "Login First!" });
                 }
                 CommonResponse Response = await _flightServices.BookingDetail(request,userid);
                 return Ok(Response);
