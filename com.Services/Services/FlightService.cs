@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -115,12 +116,7 @@ namespace com.Services.Services
                     response.Status = HttpStatusCode.BadRequest;
                     return response;
                 }
-                if (!Enum.IsDefined(typeof(JourneyTypeEnum), request.JourneyType))
-                {
-                    response.Status = HttpStatusCode.BadRequest;
-                    response.Data = "JourneyType is Invalid!";
-                    return response;
-                }
+                
                 if (Convert.ToInt16(request.adults) > 9)
                 {
                     response.Status = HttpStatusCode.BadRequest;
@@ -139,39 +135,80 @@ namespace com.Services.Services
                     response.Data = "Infant should less or equal to adult count!";
                     return response;
                 }
-                if (request.JourneyType!=(int)JourneyTypeEnum.MultiCity && Convert.ToInt16(request.JourneyType) != Convert.ToInt16(request.segments.Length))
+
+                if (!Enum.IsDefined(typeof(JourneyTypeEnum), request.JourneyType))
                 {
                     response.Status = HttpStatusCode.BadRequest;
-                    response.Data = "Segments is Invalid!";
+                    response.Data = "JourneyType is Invalid!";
+                    return response;
+                }
+                if (request.JourneyType == (int)JourneyTypeEnum.OneWay && request.segments.Length != 1)
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "One way must have 1 segment";
                     return response;
                 }
 
-                foreach (var seg in request.segments)
+                if (request.JourneyType == (int)JourneyTypeEnum.RoundTrip && request.segments.Length != 2)
                 {
-                    try
-                    {
-                        var depDate = Convert.ToDateTime(seg.depdate).Date;
-                        var today = DateTime.Now.Date;
-                        //if (Convert.ToDateTime(seg.depdate) < DateTime.Now || Convert.ToDateTime(seg.depdate) > DateTime.Now.AddYears(1))
-                        if (depDate < today || depDate > today.AddYears(1))
-                        {
-                            response.Status = HttpStatusCode.BadRequest;
-                            response.Data = "Invalid  Date!";
-                            return response;
-                        }
-                    }
-                    catch
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Return must have 2 segments";
+                    return response;
+                }
+                if (request.JourneyType == (int)JourneyTypeEnum.MultiCity && (request.segments.Length < 2 || request.segments.Length > 3))
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Segments must be 2 and 3 in MultiCity!";
+                    return response;
+                }
+
+                DateTime today = DateTime.Today;
+                DateTime prevDate = DateTime.MinValue;
+
+                for (int i = 0; i < request.segments.Length; i++)
+                {
+                    var seg = request.segments[i];
+
+                    if (string.IsNullOrWhiteSpace(seg.depcode))
                     {
                         response.Status = HttpStatusCode.BadRequest;
-                        response.Data = "Invalid  Date!";
+                        response.Data = $"Segment {i + 1} depcode required";
                         return response;
                     }
-                    if (string.IsNullOrEmpty(seg.depcode) || string.IsNullOrEmpty(seg.arrcode))
+
+                    if (string.IsNullOrWhiteSpace(seg.arrcode))
                     {
                         response.Status = HttpStatusCode.BadRequest;
-                        response.Data = "Invalid Departure Code or arrival Code Request!";
+                        response.Data = $"Segment {i + 1} arrcode required";
                         return response;
                     }
+
+                    if (!DateTime.TryParseExact(seg.depdate,
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out DateTime depDate))
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date format must be yyyy-MM-dd";
+                        return response;
+                    }
+
+                    if (depDate.Date < today)
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date must be greater than today";
+                        return response;
+                    }
+
+                    if (i > 0 && depDate <= prevDate)
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date must be greater than previous segment date";
+                        return response;
+                    }
+
+                    prevDate = depDate;
                 }
 
                 if (request.cabin.ToLower().Replace(" ", "") != "c" && request.cabin.ToLower().Replace(" ", "") != "f" && request.cabin.ToLower().Replace(" ", "") != "m" && request.cabin.ToLower().Replace(" ", "") != "w" && request.cabin.ToLower().Replace(" ", "") != "y")
@@ -273,36 +310,79 @@ namespace com.Services.Services
                     response.Data = "Infant should less or equal to adult count!";
                     return response;
                 }
-                if (Convert.ToInt16(request.JourneyType) != Convert.ToInt16(request.segments.Length))
+                if (!Enum.IsDefined(typeof(JourneyTypeEnum), request.JourneyType))
                 {
                     response.Status = HttpStatusCode.BadRequest;
-                    response.Data = "Segments is Invalid!";
+                    response.Data = "JourneyType is Invalid!";
+                    return response;
+                }
+                if (request.JourneyType == (int)JourneyTypeEnum.OneWay && request.segments.Length != 1)
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "One way must have 1 segment";
                     return response;
                 }
 
-                foreach (var seg in request.segments)
+                if (request.JourneyType == (int)JourneyTypeEnum.RoundTrip && request.segments.Length != 2)
                 {
-                    try
-                    {
-                        if (Convert.ToDateTime(seg.depdate) < DateTime.Now || Convert.ToDateTime(seg.depdate) > DateTime.Now.AddYears(1))
-                        {
-                            response.Status = HttpStatusCode.BadRequest;
-                            response.Data = "Invalid  Date!";
-                            return response;
-                        }
-                    }
-                    catch
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Return must have 2 segments";
+                    return response;
+                }
+                if (request.JourneyType == (int)JourneyTypeEnum.MultiCity && (request.segments.Length < 2 || request.segments.Length > 3))
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Segments must be in MultiCity!";
+                    return response;
+                }
+
+                DateTime today = DateTime.Today;
+                DateTime prevDate = DateTime.MinValue;
+
+                for (int i = 0; i < request.segments.Length; i++)
+                {
+                    var seg = request.segments[i];
+
+                    if (string.IsNullOrWhiteSpace(seg.depcode))
                     {
                         response.Status = HttpStatusCode.BadRequest;
-                        response.Data = "Invalid  Date!";
+                        response.Data = $"Segment {i + 1} depcode required";
                         return response;
                     }
-                    if (string.IsNullOrEmpty(seg.depcode) || string.IsNullOrEmpty(seg.arrcode))
+
+                    if (string.IsNullOrWhiteSpace(seg.arrcode))
                     {
                         response.Status = HttpStatusCode.BadRequest;
-                        response.Data = "Invalid Request!";
+                        response.Data = $"Segment {i + 1} arrcode required";
                         return response;
                     }
+
+                    if (!DateTime.TryParseExact(seg.depdate,
+                            "yyyy-MM-dd",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.None,
+                            out DateTime depDate))
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date format must be yyyy-MM-dd";
+                        return response;
+                    }
+
+                    if (depDate.Date < today)
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date must be greater than today";
+                        return response;
+                    }
+
+                    if (i > 0 && depDate <= prevDate)
+                    {
+                        response.Status = HttpStatusCode.BadRequest;
+                        response.Data = $"Segment {i + 1} date must be greater than previous segment date";
+                        return response;
+                    }
+
+                    prevDate = depDate;
                 }
 
                 if (request.cabin.ToLower().Replace(" ", "") != "c" && request.cabin.ToLower().Replace(" ", "") != "f" && request.cabin.ToLower().Replace(" ", "") != "m" && request.cabin.ToLower().Replace(" ", "") != "w" && request.cabin.ToLower().Replace(" ", "") != "y")
