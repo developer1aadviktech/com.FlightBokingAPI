@@ -135,6 +135,7 @@ namespace com.Services.Services
                     response.Data = "Infant should less or equal to adult count!";
                     return response;
                 }
+
                 if (!Enum.IsDefined(typeof(JourneyTypeEnum), request.JourneyType))
                 {
                     response.Status = HttpStatusCode.BadRequest;
