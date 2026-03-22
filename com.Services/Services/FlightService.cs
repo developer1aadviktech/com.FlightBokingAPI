@@ -585,6 +585,101 @@ namespace com.Services.Services
             }
         }
 
+        public async Task<CommonResponse> FareRule(SearchRequest.FlightDetailRequest request, int userid)
+        {
+            CommonResponse response = new CommonResponse();
+            try
+            {
+                #region Validation
+
+                UserDetailDTO userdetail = await _genericRepository.LoadSingleData<UserDetailDTO, object>("GetUserById", new { UserId = userid });
+                if (userdetail == null || userdetail.UserId == null || userdetail.UserId == 0 || string.IsNullOrEmpty(userdetail.UserName))
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Invalid User!";
+                    return response;
+                }
+
+                var xmlfiles = Path.Combine(_env.ContentRootPath, "XmlFiles/");
+
+                if (request.sc == null || request.sc == "" || request.id == null || request.id == "" || File.Exists(xmlfiles + request.sc + request.id + "_flight_revalidate.json") == false || File.Exists(xmlfiles + request.sc + request.id + "_Fare_InformativePricingWithoutPNR_Response.json") == false)
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Invalid error Call FlightDetailc first!";
+                    return response;
+                }
+                var file_text = "";
+                using (var fileStream = new FileStream(xmlfiles + request.sc + "_flight_result.json", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var streamReader = new StreamReader(fileStream))
+                {
+                    file_text = streamReader.ReadToEnd();
+                }
+
+                //com.ThirdPartyAPIs.Models.Flight.ResultResponse.FlightResponse File_data = Newtonsoft.Json.JsonConvert.DeserializeObject<com.ThirdPartyAPIs.Models.Flight.ResultResponse.FlightResponse>(file_text);
+                ResultResponse.FlightResponse File_data = System.Text.Json.JsonSerializer.Deserialize<ResultResponse.FlightResponse>(file_text);
+
+                ResultResponse.Flightdata selected_flight = File_data.Data.Find(x => x.id == request.id);
+                if (selected_flight == null)
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Invalid selected flight!";
+                    return response;
+                }
+
+                var file_textR = "";
+                using (var fileStream = new FileStream(xmlfiles + request.sc + request.id + "_Fare_InformativePricingWithoutPNR_Response.json", FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var streamReader = new StreamReader(fileStream))
+                {
+                    file_textR = streamReader.ReadToEnd();
+                }
+
+                com.ThirdPartyAPIs.Amadeus.Flight.Fare_InformativePricingWithoutPNR_response.Envelope result = System.Text.Json.JsonSerializer.Deserialize<com.ThirdPartyAPIs.Amadeus.Flight.Fare_InformativePricingWithoutPNR_response.Envelope>(file_textR);
+
+                if (result == null)
+                {
+                    response.Status = HttpStatusCode.BadRequest;
+                    response.Data = "Invalid selected flight!";
+                    return response;
+                }
+
+                #endregion;
+
+                #region Currency
+                com.ThirdPartyAPIs.CurrencyExchange.currencyexchange_rate_fixer.Rootobject Rootobject_curency_list = new ThirdPartyAPIs.CurrencyExchange.currencyexchange_rate_fixer.Rootobject();
+                com.ThirdPartyAPIs.CurrencyExchange.currencyexchange_rate_fixer currency_exchange_rate_fixer = new ThirdPartyAPIs.CurrencyExchange.currencyexchange_rate_fixer(_configuration, _env, _genericRepository);
+                //Rootobject_curency_list = await currency_exchange_rate_fixer.get_exchage_rate();
+
+                #endregion;
+
+                #region Call API
+                var tasks = new List<Task<int>>();
+                com.ThirdPartyAPIs.Models.Flight.FareRule.FareRuleResponse API_RESULT = new ThirdPartyAPIs.Models.Flight.FareRule.FareRuleResponse();
+
+                if (selected_flight.supplier == (int)SupplierEnum.Amadeus)
+                {
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        var AmadeusService = new com.ThirdPartyAPIs.Amadeus.AmadeusConfig(_configuration, _env, _genericRepository, _errorLogRepository);
+                        API_RESULT = await AmadeusService.fare_rules(result, request, userdetail).ConfigureAwait(false);
+                        return 0;
+                    }));
+                }
+                Task.WaitAll(tasks.ToArray());
+                #endregion;
+
+                response.Data = API_RESULT;
+                response.Status = HttpStatusCode.OK;
+                return response;
+            }
+            catch (Exception e)
+            {
+                response.Status = HttpStatusCode.InternalServerError;
+                response.Data = e.Message.ToString();
+                _errorLogRepository.AddErrorLog(e, "FlightService->FlightDetailc ", request.sc + "|~|" + request.id);
+                return response;
+            }
+        }
+
         public async Task<CommonResponse> FillPaxData(FlightBook.BookRequest data, string ipaddress,int userid)
         {
             CommonResponse Response = new CommonResponse();
