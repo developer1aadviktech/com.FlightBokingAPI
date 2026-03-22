@@ -4104,6 +4104,222 @@ $@"<s:Envelope xmlns:s=""http://schemas.xmlsoap.org/soap/envelope/""
 
         #endregion Flight detail
 
+        #region fare rule
+        public async Task<FareRule.FareRuleResponse> fare_rules(com.ThirdPartyAPIs.Amadeus.Flight.Fare_InformativePricingWithoutPNR_response.Envelope result, SearchRequest.FlightDetailRequest request, UserDetailDTO userdetail)
+        {
+            try
+            {
+                string SequenceNumber = "2";
+                var xmlfiles = Path.Combine(_env.ContentRootPath, "XmlFiles/");
+
+                com.ThirdPartyAPIs.Models.Flight.FareRule.FareRuleResponse farerule = new FareRule.FareRuleResponse();
+                List<com.ThirdPartyAPIs.Models.Flight.FareRule.Data> farerule_data = new List<FareRule.Data>();
+
+                foreach (var fare_components in result.Body.Fare_InformativePricingWithoutPNRReply.mainGroup.pricingGroupLevelGroup[0].fareInfoGroup.fareComponentDetailsGroup)
+                {
+
+                    var fareComponentIDs = Array.FindAll(fare_components.fareComponentID, item => item.type == "FC");
+                    List<com.ThirdPartyAPIs.Models.Flight.FareRule.farerule_data> farerule_des = new List<FareRule.farerule_data>();
+                    foreach (var fareComponentID in fareComponentIDs)
+                    {
+                        #region Request
+
+                        string password = "U9MbJZjzR^EP";
+                        var url = _configuration["FlightSettings:AirProductionURL"];
+                        Guid guid = Guid.NewGuid();
+                        string guidString = guid.ToString();
+                        byte[] nonce = new byte[16];
+                        using (var rng = new RNGCryptoServiceProvider())
+                        {
+                            rng.GetBytes(nonce);
+                        }
+                        DateTime timestamp = DateTime.UtcNow;
+                        string formattedTimestamp = timestamp.ToString("yyyy-MM-ddTHH:mm:ss+00:00");
+                        string encodedNonce = Convert.ToBase64String(nonce);
+                        string passSHA = "";
+                        using (SHA1 sha1 = SHA1.Create())
+                        {
+                            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+                            byte[] passwordHash = sha1.ComputeHash(passwordBytes);
+
+                            byte[] timestampBytes = Encoding.ASCII.GetBytes(formattedTimestamp);
+                            byte[] combinedBytes = new byte[nonce.Length + timestampBytes.Length + passwordHash.Length];
+
+                            Buffer.BlockCopy(nonce, 0, combinedBytes, 0, nonce.Length);
+                            Buffer.BlockCopy(timestampBytes, 0, combinedBytes, nonce.Length, timestampBytes.Length);
+                            Buffer.BlockCopy(passwordHash, 0, combinedBytes, nonce.Length + timestampBytes.Length, passwordHash.Length);
+
+                            byte[] passSHABytes = sha1.ComputeHash(combinedBytes);
+                            passSHA = Convert.ToBase64String(passSHABytes);
+                        }
+                        var content = new StringContent("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\""
+                            + " xmlns:awsse=\"http://xml.amadeus.com/2010/06/Session_v3\""
+                            + " xmlns:sec=\"http://xml.amadeus.com/2010/06/Security_v1\""
+                            + " xmlns:typ=\"http://xml.amadeus.com/2010/06/Types_v1\""
+                            + " xmlns:app=\"http://xml.amadeus.com/2010/06/AppMdw_CommonTypes_v3\">"
+                            + "<s:Header>"
+                            + "<a:MessageID xmlns:a=\"http://www.w3.org/2005/08/addressing\">" + guidString + "</a:MessageID>"
+                            + "<a:Action xmlns:a=\"http://www.w3.org/2005/08/addressing\">" + _configuration["FlightSettings:AirSoapAction"] + "FARQNQ_07_1_1A</a:Action>"
+                            + "<a:To xmlns:a=\"http://www.w3.org/2005/08/addressing\">" + _configuration["FlightSettings:AirProductionURL"] + "</a:To>"
+                            + "<link:TransactionFlowLink xmlns:link=\"http://wsdl.amadeus.com/2010/06/ws/Link_v1\" />"
+                            + "<awsse:Session TransactionStatusCode=\"InSeries\" xmlns:awsse=\"http://xml.amadeus.com/2010/06/Session_v3\">"
+                            + "<awsse:SessionId>" + result.Header.Session.SessionId
+                            + "</awsse:SessionId> <awsse:SequenceNumber>" + SequenceNumber + "</awsse:SequenceNumber> <awsse:SecurityToken>"
+                            + result.Header.Session.SecurityToken + "</awsse:SecurityToken> </awsse:Session>"
+                            + "</s:Header>"
+                            + "<s:Body>"
+                            + "<Fare_CheckRules>"
+                            + "<msgType>"
+                            + "<messageFunctionDetails>"
+                            + "<messageFunction>712</messageFunction>"
+                            + "</messageFunctionDetails>"
+                            + "</msgType>"
+                            + "<itemNumber>"
+                            + "<itemNumberDetails>"
+                            + "<number>1</number>"
+                            + "</itemNumberDetails>"
+                            + "<itemNumberDetails>"
+                            + "<number>1</number>"
+                            + "<type>FC</type>"
+                            + "</itemNumberDetails>"
+                            + "</itemNumber>"
+                            + "<fareRule>"
+                            + "<tarifFareRule>"
+                            + "<ruleSectionId>RU</ruleSectionId>"
+                            + "<ruleSectionId>PE</ruleSectionId>"
+                            + "<ruleSectionId>SR</ruleSectionId>"
+                            + "<ruleSectionId>MX</ruleSectionId>"
+                            + "</tarifFareRule>"
+                            + "</fareRule>"
+                            + "</Fare_CheckRules>"
+                            + "</s:Body>"
+                            + "</s:Envelope>", null, "application/xml");
+
+                        #endregion Request 
+
+                        var requestContent = content.ReadAsStringAsync().Result;
+
+                        if (!string.IsNullOrWhiteSpace(xmlfiles))
+                        {
+                            if (!Directory.Exists(xmlfiles))
+                                Directory.CreateDirectory(xmlfiles);
+                            File.WriteAllText(Path.Combine(xmlfiles, request.sc + request.id + "_Fare_checkrules_request.xml"), requestContent, Encoding.UTF8);
+                        }
+                        string soapAction = _configuration["FlightSettings:AirSoapAction"] + "FARQNQ_07_1_1A";
+                        var re = await WebRequestUtilityAmadeus.InvokePostRequestAmadeus(url, soapAction, content);
+
+
+                        if (!string.IsNullOrWhiteSpace(xmlfiles))
+                        {
+                            if (!Directory.Exists(xmlfiles))
+                                Directory.CreateDirectory(xmlfiles);
+                            File.WriteAllText(Path.Combine(xmlfiles, request.sc + request.id + "_Fare_checkrules_response.xml"), re ?? string.Empty, Encoding.UTF8);
+                        }
+
+                        #region Response
+
+                        XmlSerializer serializer2 = new XmlSerializer(typeof(com.ThirdPartyAPIs.Amadeus.Flight.Fare_checkrules_response.Envelope));
+                        StringReader rdr2 = new StringReader(re);
+                        com.ThirdPartyAPIs.Amadeus.Flight.Fare_checkrules_response.Envelope fare_rules_result = (com.ThirdPartyAPIs.Amadeus.Flight.Fare_checkrules_response.Envelope)serializer2.Deserialize(rdr2);
+                        rdr2.Close();
+
+                        File.WriteAllText(xmlfiles + request.sc + request.id + "_Fare_checkrules_response.json", Newtonsoft.Json.JsonConvert.SerializeObject(fare_rules_result), System.Text.ASCIIEncoding.UTF8);
+                        #endregion;
+
+
+                        if (fare_rules_result.Body == null || fare_rules_result.Body.Fare_CheckRulesReply == null || fare_rules_result.Body.Fare_CheckRulesReply.tariffInfo == null || fare_rules_result.Body.Fare_CheckRulesReply.errorInfo != null || fare_rules_result.Body.Fare_CheckRulesReply.tariffInfo.Length == 0)
+                        {
+                            farerule.error = "Fare rules not available!";
+
+                        }
+
+                        if (fare_rules_result.Body.Fare_CheckRulesReply.tariffInfo != null && fare_rules_result.Body.Fare_CheckRulesReply.tariffInfo.Length > 0)
+                        {
+                            foreach (var rule in fare_rules_result.Body.Fare_CheckRulesReply.tariffInfo)
+                            {
+                                if (rule.fareRuleInfo == null || rule.fareRuleText == null || rule.fareRuleText.Length == 0)
+                                {
+                                    continue;
+                                }
+
+                                string title = "";
+                                string description = "";
+                                foreach (var fareNotes in rule.fareRuleText)
+                                {
+                                    description = description + fareNotes.freeText[0].ToString().Replace("/.", "/.<br><br>");
+                                    if (fareNotes.freeTextQualification.informationType != null && fareNotes.freeTextQualification.informationType != "")
+                                    {
+                                        title = fareNotes.freeText[0].ToString();
+                                        description = description + "<br><br>";
+                                    }
+
+
+                                }
+
+                                farerule_des.Add(new Models.Flight.FareRule.farerule_data()
+                                {
+                                    description = description,
+                                    title = title,
+                                });
+                            }
+                        }
+
+
+                        var segment_fare_rule = farerule_data.Find(x => x.segmentid == SequenceNumber);
+                        if (segment_fare_rule == null)
+                        {
+                            string departure_airport = fare_components.marketFareComponent.boardPointDetails.trueLocationId.ToString();
+                            string arrival_airport = fare_components.marketFareComponent.offpointDetails.trueLocationId.ToString();
+
+
+                            farerule_data.Add(new Models.Flight.FareRule.Data()
+                            {
+                                arrival_iata = arrival_airport,
+                                departure_iata = departure_airport,
+                                farerule = farerule_des,
+                                segmentid = SequenceNumber
+                            });
+                        }
+
+                        SequenceNumber = (Convert.ToInt32(SequenceNumber) + 1).ToString();
+                    }
+
+
+                    System.IO.File.WriteAllText(xmlfiles + request.sc + request.id + "_farerules.json", Newtonsoft.Json.JsonConvert.SerializeObject(farerule_data), System.Text.ASCIIEncoding.UTF8);
+                    farerule.success = true;
+                    farerule.data = farerule_data;
+
+                }
+
+                Air_SellFromRecommendation_response.System_air_sellfromrecommendation IS_FLIGHT_AVAILABLE_FOR_BOOK = new()
+                {
+                    SecurityToken = result.Header.Session.SecurityToken,
+                    SessionId = result.Header.Session.SessionId,
+                    success = true,
+                };
+
+                SequenceNumber = (Convert.ToInt16(SequenceNumber) + 1).ToString();
+                com.ThirdPartyAPIs.Amadeus.Flight.Security_SignOut_response.Envelope Security_SignOut_obj = await Security_SignOut(SequenceNumber, IS_FLIGHT_AVAILABLE_FOR_BOOK);
+
+                if (farerule.data != null && farerule.data.Count > 0)
+                {
+                    farerule.success = true;
+                }
+
+
+                return farerule;
+            }
+            catch (Exception ex)
+            {
+                com.ThirdPartyAPIs.Models.Flight.FareRule.FareRuleResponse farerule = new FareRule.FareRuleResponse();
+                farerule.success = false;
+                farerule.error = "An Internal Server Error!";
+                return farerule;
+            }
+        }
+
+        #endregion
+
         #region Booking APIs
 
         #region Air_SellFromRecommendation

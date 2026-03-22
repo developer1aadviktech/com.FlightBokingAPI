@@ -165,6 +165,32 @@ namespace com.FlightBokingAPI.Controllers
             }
         }
 
+
+        [HttpPost("FareRule")]
+        public async Task<ActionResult> FareRule([FromBody] SearchRequest.FlightDetailRequest request)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(request.sc) && !string.IsNullOrEmpty(request.id))
+                {
+                    int userid = Convert.ToInt32(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                    if (userid == null || userid == 0)
+                    {
+                        return Ok(new CommonResponse { Status = HttpStatusCode.NonAuthoritativeInformation, Data = "Login First!" });
+                    }
+                    CommonResponse Response = await _flightServices.FareRule(request, userid);
+                    return Ok(Response);
+                }
+                return Ok(new CommonResponse { Status = HttpStatusCode.BadRequest, Data = "Invalid input" });
+            }
+            catch (Exception e)
+            {
+                _errorLogRepository.AddErrorLog(e, "Flight->FareRule", JsonConvert.SerializeObject(request));
+                return Ok(new CommonResponse { Status = HttpStatusCode.InternalServerError, Data = "An Error Found!" });
+            }
+        }
+
+
         [HttpPost("Book")]
         public async Task<ActionResult> Book([FromBody] FlightBook.BookRequest request)
         {
